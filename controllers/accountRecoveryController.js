@@ -2,7 +2,7 @@ const {
   AccountRecovery,
   SOCIAL_PLATFORMS,
 } = require("../models/AccountRecovery");
-const { cloudinary } = require("../config/cloudinary");
+const { cloudinary, upload } = require("../config/cloudinary");
 
 // @desc    Submit new account recovery request
 // @route   POST /api/account-recovery
@@ -18,6 +18,17 @@ exports.submitRequest = async (req, res) => {
       idNumber,
       description,
     } = req.body;
+
+    // Validate required fields
+    const requiredFields = ['platform', 'username', 'phoneNumber', 'email', 'fullName', 'idNumber'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+      });
+    }
 
     // Validate platform
     if (!Object.values(SOCIAL_PLATFORMS).includes(platform)) {
@@ -35,10 +46,30 @@ exports.submitRequest = async (req, res) => {
       });
     }
 
+    // Validate file types
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    const invalidFiles = req.files.filter(file => !allowedTypes.includes(file.mimetype));
+    
+    if (invalidFiles.length > 0) {
+      // Cleanup invalid files
+      for (const file of invalidFiles) {
+        if (file.filename) {
+          await cloudinary.uploader.destroy(file.filename);
+        }
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Only JPG, PNG, and PDF files are allowed",
+      });
+    }
+
     // Process uploaded files
     const identityDocuments = req.files.map((file) => ({
       secure_url: file.path,
       public_id: file.filename,
+      original_name: file.originalname,
+      mime_type: file.mimetype,
+      size: file.size
     }));
 
     // Create new recovery request
