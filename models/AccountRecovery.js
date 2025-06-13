@@ -13,24 +13,24 @@ const accountRecoverySchema = new mongoose.Schema(
     // Platform Selection
     platform: {
       type: String,
-      required: true,
+      required: [true, "Platform is required"],
       enum: Object.values(SOCIAL_PLATFORMS),
     },
 
     // Account Information
     username: {
       type: String,
-      required: true,
+      required: [true, "Username is required"],
       trim: true,
     },
     phoneNumber: {
       type: String,
-      required: true,
+      required: [true, "Phone number is required"],
       trim: true,
     },
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required"],
       trim: true,
       lowercase: true,
     },
@@ -38,12 +38,12 @@ const accountRecoverySchema = new mongoose.Schema(
     // Personal Information
     fullName: {
       type: String,
-      required: true,
+      required: [true, "Full name is required"],
       trim: true,
     },
     idNumber: {
       type: String,
-      required: true,
+      required: [true, "ID number is required"],
       trim: true,
     },
 
@@ -64,16 +64,8 @@ const accountRecoverySchema = new mongoose.Schema(
     // Additional Information
     description: {
       type: String,
-      required: true,
+      required: [true, "Description is required"],
       trim: true,
-    },
-
-    // Request Status
-    status: {
-      type: String,
-      required: true,
-      enum: ["pending", "in-progress", "completed", "rejected"],
-      default: "pending",
     },
 
     // Timestamps

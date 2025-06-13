@@ -20,13 +20,20 @@ exports.submitRequest = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    const requiredFields = ['platform', 'username', 'phoneNumber', 'email', 'fullName', 'idNumber'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
-    
+    const requiredFields = [
+      "platform",
+      "username",
+      "phoneNumber",
+      "email",
+      "fullName",
+      "idNumber",
+    ];
+    const missingFields = requiredFields.filter((field) => !req.body[field]);
+
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message: `Missing required fields: ${missingFields.join(', ')}`,
+        message: `Missing required fields: ${missingFields.join(", ")}`,
       });
     }
 
@@ -47,9 +54,11 @@ exports.submitRequest = async (req, res) => {
     }
 
     // Validate file types
-    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    const invalidFiles = req.files.filter(file => !allowedTypes.includes(file.mimetype));
-    
+    const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+    const invalidFiles = req.files.filter(
+      (file) => !allowedTypes.includes(file.mimetype)
+    );
+
     if (invalidFiles.length > 0) {
       // Cleanup invalid files
       for (const file of invalidFiles) {
@@ -69,7 +78,7 @@ exports.submitRequest = async (req, res) => {
       public_id: file.filename,
       original_name: file.originalname,
       mime_type: file.mimetype,
-      size: file.size
+      size: file.size,
     }));
 
     // Create new recovery request
@@ -144,7 +153,7 @@ exports.getAllRequests = async (req, res) => {
   }
 };
 
-// @desc    Get recovery request by ID
+// @desc    Get single recovery request
 // @route   GET /api/account-recovery/:id
 // @access  Private (Admin only)
 exports.getRequestById = async (req, res) => {
@@ -171,47 +180,6 @@ exports.getRequestById = async (req, res) => {
   }
 };
 
-// @desc    Update recovery request status
-// @route   PUT /api/account-recovery/:id
-// @access  Private (Admin only)
-exports.updateRequestStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-
-    if (!["pending", "in-progress", "completed", "rejected"].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "حالة الطلب غير صالحة",
-      });
-    }
-
-    const request = await AccountRecovery.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message: "الطلب غير موجود",
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "تم تحديث حالة الطلب بنجاح",
-      data: request,
-    });
-  } catch (error) {
-    console.error("Error updating recovery request:", error);
-    res.status(500).json({
-      success: false,
-      message: "حدث خطأ أثناء تحديث الطلب",
-    });
-  }
-};
-
 // @desc    Delete recovery request and its documents
 // @route   DELETE /api/account-recovery/:id
 // @access  Private (Admin only)
@@ -233,8 +201,8 @@ exports.deleteRequest = async (req, res) => {
       }
     }
 
-    // Delete the request from database
-    await request.remove();
+    // Delete the request from database using findByIdAndDelete
+    await AccountRecovery.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,

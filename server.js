@@ -19,6 +19,9 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/bookings", require("./routes/bookings"));
 app.use("/api/account-recovery", require("./routes/accountRecovery"));
+app.use("/api/reports", require("./routes/reports"));
+app.use("/api/feedback", require("./routes/feedback"));
+app.use("/api/blogs",require("./routes/blogs"));
 
 // Default route
 app.get("/", (req, res) => {
