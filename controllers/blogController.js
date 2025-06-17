@@ -1,9 +1,6 @@
 const Blog = require("../models/Blog");
 const { cloudinary } = require("../config/cloudinary");
 
-// @desc    Create new blog post
-// @route   POST /api/blogs
-// @access  Private (Admin only)
 exports.createBlog = async (req, res) => {
   try {
     const { title, category, excerpt, content, author, date } = req.body;

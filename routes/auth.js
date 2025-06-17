@@ -4,9 +4,6 @@ const { check } = require("express-validator");
 const auth = require("../middleware/auth");
 const { login, logout } = require("../controllers/authController");
 
-// @route   POST api/auth/login
-// @desc    Authenticate admin & get token
-// @access  Public
 router.post(
   "/login",
   [
@@ -16,9 +13,6 @@ router.post(
   login
 );
 
-// @route   POST api/auth/logout
-// @desc    Logout admin
-// @access  Private
 router.post("/logout", auth, logout);
 
 module.exports = router;

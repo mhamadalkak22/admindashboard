@@ -15,7 +15,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "identity-documents", // The folder in cloudinary
-    allowed_formats: ["jpg", "jpeg", "png", "pdf"], // Allowed formats
+    allowed_formats: ["jpg", "jpeg", "png", "pdf", "mp4", "mov", "avi"], // Allowed formats
     transformation: [{ width: 1000, height: 1000, crop: "limit" }], // Optional transformations
     // Add resource_type to handle different file types including PDFs
     resource_type: "auto"
@@ -30,7 +30,7 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     // Check file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'video/mp4', 'video/quicktime', 'video/x-msvideo'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {

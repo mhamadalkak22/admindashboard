@@ -13,10 +13,10 @@ const {
 const uploadMedia = upload.single("media");
 
 // Public routes
-router.post("/", uploadMedia, submitFeedback);
+router.post("/", auth, uploadMedia, submitFeedback);
 
 // Protected routes (Admin only)
-router.get("/", auth, getAllFeedback);
+router.get("/", getAllFeedback);
 router.get("/:id", auth, getFeedbackById);
 router.delete("/:id", auth, deleteFeedback);
 

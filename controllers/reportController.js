@@ -6,47 +6,83 @@ const { cloudinary } = require("../config/cloudinary");
 // @access  Public
 exports.submitReport = async (req, res) => {
   try {
-    const { fakeAccount, personalInfo, realAccounts } = req.body;
+    const { fakeAccount, personalInfo, realAccounts, attachments } = req.body;
 
-    // Handle uploaded files
-    if (!req.files) {
+    // Handle both direct file uploads and Cloudinary URLs
+    let idImage = null;
+    let screenshots = [];
+    let additionalDocuments = [];
+    let identityProof = [];
+
+    // Process files from direct uploads
+    if (req.files) {
+      if (req.files.idImage) {
+        idImage = {
+          secure_url: req.files.idImage[0].path,
+          public_id: req.files.idImage[0].filename,
+        };
+      }
+
+      if (req.files.screenshots) {
+        screenshots = req.files.screenshots.map((file) => ({
+          secure_url: file.path,
+          public_id: file.filename,
+        }));
+      }
+
+      if (req.files.additionalDocuments) {
+        additionalDocuments = req.files.additionalDocuments.map((file) => ({
+          secure_url: file.path,
+          public_id: file.filename,
+        }));
+      }
+
+      if (req.files.identityProof) {
+        identityProof = req.files.identityProof.map((file) => ({
+          secure_url: file.path,
+          public_id: file.filename,
+        }));
+      }
+    }
+
+    // Process files from Cloudinary URLs
+    if (attachments) {
+      if (attachments.idImages && attachments.idImages.length > 0) {
+        idImage = {
+          secure_url: attachments.idImages[0].url,
+          public_id: attachments.idImages[0].public_id,
+        };
+      }
+
+      if (attachments.screenshots) {
+        screenshots = attachments.screenshots.map((file) => ({
+          secure_url: file.url,
+          public_id: file.public_id,
+        }));
+      }
+
+      if (attachments.additionalDocuments) {
+        additionalDocuments = attachments.additionalDocuments.map((file) => ({
+          secure_url: file.url,
+          public_id: file.public_id,
+        }));
+      }
+
+      if (attachments.identityProof) {
+        identityProof = attachments.identityProof.map((file) => ({
+          secure_url: file.url,
+          public_id: file.public_id,
+        }));
+      }
+    }
+
+    // Validate that we have at least one document
+    if (!idImage && screenshots.length === 0 && additionalDocuments.length === 0 && identityProof.length === 0) {
       return res.status(400).json({
         success: false,
         message: "يجب إرفاق المستندات المطلوبة",
       });
     }
-
-    // Process ID image
-    const idImage = req.files.idImage
-      ? {
-          secure_url: req.files.idImage[0].path,
-          public_id: req.files.idImage[0].filename,
-        }
-      : null;
-
-    // Process screenshots
-    const screenshots = req.files.screenshots
-      ? req.files.screenshots.map((file) => ({
-          secure_url: file.path,
-          public_id: file.filename,
-        }))
-      : [];
-
-    // Process additional documents
-    const additionalDocuments = req.files.additionalDocuments
-      ? req.files.additionalDocuments.map((file) => ({
-          secure_url: file.path,
-          public_id: file.filename,
-        }))
-      : [];
-
-    // Process identity proof documents
-    const identityProof = req.files.identityProof
-      ? req.files.identityProof.map((file) => ({
-          secure_url: file.path,
-          public_id: file.filename,
-        }))
-      : [];
 
     // Create new report
     const report = new Report({

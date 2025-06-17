@@ -2,6 +2,7 @@ const {
   Booking,
   SERVICE_TYPES,
   AVAILABLE_TIMES,
+  PLATFORMS,
 } = require("../models/Booking");
 
 // @desc    Create new booking
@@ -10,33 +11,32 @@ const {
 exports.createBooking = async (req, res) => {
   try {
     // Debug: Log the entire request body
-    console.log("Request body:", req.body);
 
     const {
       fullName,
       phoneNumber,
       email,
+      platform,
       serviceType,
       appointmentDate,
       appointmentTime,
       additionalNotes,
     } = req.body;
 
-    // Debug: Log the extracted values
-    console.log("Extracted values:", {
-      fullName,
-      phoneNumber,
-      email,
-      serviceType,
-      appointmentDate,
-      appointmentTime,
-      additionalNotes,
-    });
+    // Validate platform
+    if (!PLATFORMS[platform]) {
+      return res.status(400).json({
+        success: false,
+        message: "المنصة غير صحيحة",
+        validPlatforms: PLATFORMS,
+      });
+    }
 
     // Validate service type
     const arabicServiceName = SERVICE_TYPES[serviceType];
     if (!arabicServiceName) {
       return res.status(400).json({
+        success: false,
         message: "نوع الخدمة غير صحيح",
         validServices: SERVICE_TYPES,
       });
@@ -45,6 +45,7 @@ exports.createBooking = async (req, res) => {
     // Validate appointment time
     if (!AVAILABLE_TIMES.includes(appointmentTime)) {
       return res.status(400).json({
+        success: false,
         message: "وقت الموعد غير صحيح",
         validTimes: AVAILABLE_TIMES,
       });
@@ -54,6 +55,7 @@ exports.createBooking = async (req, res) => {
     const date = new Date(appointmentDate);
     if (isNaN(date.getTime())) {
       return res.status(400).json({
+        success: false,
         message: "تاريخ الموعد غير صحيح",
       });
     }
@@ -61,12 +63,12 @@ exports.createBooking = async (req, res) => {
     // Check if date is in the past
     if (date < new Date()) {
       return res.status(400).json({
+        success: false,
         message: "لا يمكن حجز موعد في تاريخ سابق",
       });
     }
 
     // Debug: Log the validated date
-    console.log("Validated date:", date);
 
     // Check if the time slot is available
     const existingBooking = await Booking.findOne({
@@ -76,6 +78,7 @@ exports.createBooking = async (req, res) => {
 
     if (existingBooking) {
       return res.status(400).json({
+        success: false,
         message: "هذا الموعد محجوز مسبقاً، يرجى اختيار وقت آخر",
       });
     }
@@ -85,19 +88,16 @@ exports.createBooking = async (req, res) => {
       fullName,
       phoneNumber,
       email,
+      platform,
       serviceType: arabicServiceName,
       appointmentDate: date,
       appointmentTime,
       additionalNotes,
     });
 
-    // Debug: Log the booking before save
-    console.log("Booking before save:", booking);
 
     const savedBooking = await booking.save();
 
-    // Debug: Log the saved booking
-    console.log("Saved booking:", JSON.stringify(savedBooking, null, 2));
 
     res.status(201).json({
       success: true,
@@ -107,6 +107,7 @@ exports.createBooking = async (req, res) => {
   } catch (error) {
     console.error("Booking error:", error);
     res.status(500).json({
+      success: false,
       message: "حدث خطأ أثناء تقديم الطلب، يرجى المحاولة مرة أخرى",
     });
   }

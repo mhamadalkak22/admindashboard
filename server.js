@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const initializeAdmin = require("./config/initDB");
+// const initializeAdmin = require("./config/initDB");
 
 // Load environment variables
 dotenv.config();
@@ -42,7 +42,7 @@ mongoose
   .then(async () => {
     console.log("Connected to MongoDB");
     // Initialize admin account
-    await initializeAdmin();
+    // await initializeAdmin();
   })
   .catch((err) => console.error("MongoDB connection error:", err));
 

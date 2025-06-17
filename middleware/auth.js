@@ -1,17 +1,24 @@
 const jwt = require("jsonwebtoken");
+const Admin = require("../models/Admin");
 
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
   // Get token from Authorization header
   const authHeader = req.header("Authorization");
 
   // Check if no auth header
   if (!authHeader) {
-    return res.status(401).json({ message: "No token, authorization denied" });
+    return res.status(401).json({ 
+      success: false,
+      message: "No token, authorization denied" 
+    });
   }
 
   // Check if it's a Bearer token
   if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Invalid token format" });
+    return res.status(401).json({ 
+      success: false,
+      message: "Invalid token format" 
+    });
   }
 
   try {
@@ -21,20 +28,23 @@ const auth = (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Add admin from payload
-    req.admin = decoded.admin;
-
-    // If it's not the static admin, ensure the admin exists in the database
-    if (req.admin.id !== "static-admin") {
-      // The database check will happen in the route handlers
-      if (!req.admin.id) {
-        return res.status(401).json({ message: "Invalid token structure" });
-      }
+    // Get admin from database
+    const admin = await Admin.findById(decoded.admin.id).select("-password");
+    if (!admin) {
+      return res.status(401).json({ 
+        success: false,
+        message: "Admin not found" 
+      });
     }
 
+    // Add admin to request object
+    req.admin = admin;
     next();
   } catch (err) {
-    res.status(401).json({ message: "Token is not valid" });
+    res.status(401).json({ 
+      success: false,
+      message: "Token is not valid" 
+    });
   }
 };
 

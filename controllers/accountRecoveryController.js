@@ -45,8 +45,35 @@ exports.submitRequest = async (req, res) => {
       });
     }
 
-    // Handle uploaded files
-    if (!req.files || req.files.length === 0) {
+    let identityDocuments = [];
+
+    // إذا أرسل ملفات
+    if (req.files && req.files.length > 0) {
+      identityDocuments = req.files.map((file) => ({
+        secure_url: file.path,
+        public_id: file.filename,
+        original_name: file.originalname,
+        mime_type: file.mimetype,
+        size: file.size,
+      }));
+    }
+    // إذا أرسل روابط مباشرة
+    else if (req.body.identityDocuments) {
+      const docs = Array.isArray(req.body.identityDocuments)
+        ? req.body.identityDocuments
+        : [req.body.identityDocuments];
+    
+      identityDocuments = docs.map((url) => {
+        // Extract public_id from Cloudinary URL
+        const publicId = url.split('/').slice(-1)[0].split('.')[0];
+        return {
+          secure_url: url,
+          public_id: publicId
+        };
+      });
+    }
+    
+    if (identityDocuments.length === 0) {
       return res.status(400).json({
         success: false,
         message: "يجب إرفاق مستند هوية واحد على الأقل",
@@ -55,9 +82,9 @@ exports.submitRequest = async (req, res) => {
 
     // Validate file types
     const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
-    const invalidFiles = req.files.filter(
+    const invalidFiles = req.files?.filter(
       (file) => !allowedTypes.includes(file.mimetype)
-    );
+    ) || [];
 
     if (invalidFiles.length > 0) {
       // Cleanup invalid files
@@ -71,15 +98,6 @@ exports.submitRequest = async (req, res) => {
         message: "Only JPG, PNG, and PDF files are allowed",
       });
     }
-
-    // Process uploaded files
-    const identityDocuments = req.files.map((file) => ({
-      secure_url: file.path,
-      public_id: file.filename,
-      original_name: file.originalname,
-      mime_type: file.mimetype,
-      size: file.size,
-    }));
 
     // Create new recovery request
     const recoveryRequest = new AccountRecovery({

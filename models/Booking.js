@@ -1,5 +1,16 @@
 const mongoose = require("mongoose");
 
+// Define available platforms
+const PLATFORMS = {
+  instagram: "انستغرام",
+  facebook: "فيسبوك",
+  twitter: "تويتر",
+  tiktok: "تيك توك",
+  snapchat: "سناب شات",
+  whatsapp: "واتساب"
+};
+
+// Define service types
 const SERVICE_TYPES = {
   APP_DESIGN: "تصميم تطبيقات",
   WEBSITE_DESIGN: "تصميم موقع",
@@ -13,9 +24,8 @@ const SERVICE_TYPES = {
   SOCIAL_MANAGEMENT: "إدارة حسابات التواصل",
 };
 
+// Define available appointment times
 const AVAILABLE_TIMES = [
-  "8:00 ص",
-  "8:30 ص",
   "9:00 ص",
   "9:30 ص",
   "10:00 ص",
@@ -25,6 +35,7 @@ const AVAILABLE_TIMES = [
   "12:00 م",
   "12:30 م",
   "1:00 م",
+  "2:00 م",
   "5:00 م",
   "5:30 م",
   "6:00 م",
@@ -38,28 +49,32 @@ const AVAILABLE_TIMES = [
 
 const bookingSchema = new mongoose.Schema(
   {
-    // Personal Information
     fullName: {
       type: String,
       required: true,
+      trim: true,
     },
     phoneNumber: {
       type: String,
       required: true,
+      trim: true,
     },
     email: {
       type: String,
-      required: false,
+      required: true,
+      trim: true,
+      lowercase: true,
     },
-
-    // Service Details
+    platform: {
+      type: String,
+      required: true,
+      enum: Object.keys(PLATFORMS),
+    },
     serviceType: {
       type: String,
       required: true,
       enum: Object.values(SERVICE_TYPES),
     },
-
-    // Appointment Details
     appointmentDate: {
       type: Date,
       required: true,
@@ -69,11 +84,9 @@ const bookingSchema = new mongoose.Schema(
       required: true,
       enum: AVAILABLE_TIMES,
     },
-
-    // Additional Information
     additionalNotes: {
       type: String,
-      required: false,
+      trim: true,
     },
 
     // Timestamps
@@ -83,17 +96,13 @@ const bookingSchema = new mongoose.Schema(
     },
   },
   {
-    // Add timestamps for better tracking
     timestamps: true,
-    // Ensure virtuals are included in JSON
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
 );
 
-// Export both the model and constants
 module.exports = {
   Booking: mongoose.model("Booking", bookingSchema),
   SERVICE_TYPES,
   AVAILABLE_TIMES,
+  PLATFORMS,
 };
