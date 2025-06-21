@@ -7,17 +7,19 @@ const {
   getAllFeedback,
   getFeedbackById,
   deleteFeedback,
+  updateFeedback,
 } = require("../controllers/feedbackController");
 
 // Configure multer upload
 const uploadMedia = upload.single("media");
 
 // Public routes
-router.post("/", auth, uploadMedia, submitFeedback);
+router.get("/", getAllFeedback);
 
 // Protected routes (Admin only)
-router.get("/", getAllFeedback);
+router.post("/", auth, uploadMedia, submitFeedback);
 router.get("/:id", auth, getFeedbackById);
+router.put("/:id", auth, uploadMedia, updateFeedback);
 router.delete("/:id", auth, deleteFeedback);
 
 module.exports = router;

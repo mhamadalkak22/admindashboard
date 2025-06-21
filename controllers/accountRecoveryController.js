@@ -3,6 +3,7 @@ const {
   SOCIAL_PLATFORMS,
 } = require("../models/AccountRecovery");
 const { cloudinary, upload } = require("../config/cloudinary");
+const sendEmail = require("../utils/sendEmail").default;
 
 // @desc    Submit new account recovery request
 // @route   POST /api/account-recovery
@@ -118,6 +119,41 @@ exports.submitRequest = async (req, res) => {
       message: "تم تقديم طلب استرجاع الحساب بنجاح",
       data: recoveryRequest,
     });
+
+    // Send admin alert email only after successful response
+    const adminEmail = process.env.EMAIL_ADDRESS;
+    const subject = "New Account Recovery Request Submitted";
+    const html = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; padding: 32px;">
+      <div style="max-width: 480px; margin: auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px #0001; overflow: hidden;">
+        <div style="background: linear-gradient(90deg, #4f8cff, #38c6d9); color: #fff; padding: 24px 32px; text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 8px;">🚨</div>
+          <h2 style="margin: 0; font-size: 1.6em;">Admin Alert</h2>
+        </div>
+        <div style="padding: 24px 32px;">
+          <p style="font-size: 1.1em; margin-bottom: 16px;">
+            <b>New Account Recovery Request</b> has just been submitted!
+          </p>
+          <table style="width: 100%; font-size: 1em; margin-bottom: 16px;">
+            <tr><td><b>Full Name:</b></td><td>${fullName}</td></tr>
+            <tr><td><b>Email:</b></td><td>${email}</td></tr>
+            <tr><td><b>Phone Number:</b></td><td>${phoneNumber}</td></tr>
+            <tr><td><b>Platform:</b></td><td>${platform}</td></tr>
+            <tr><td><b>Username:</b></td><td>${username}</td></tr>
+            <tr><td><b>ID Number:</b></td><td>${idNumber}</td></tr>
+            <tr><td><b>Description:</b></td><td>${description || '-'}</td></tr>
+          </table>
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="#" style="background: #4f8cff; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: bold;">View in Dashboard</a>
+          </div>
+        </div>
+        <div style="background: #f4f6fb; color: #888; text-align: center; padding: 12px 0; font-size: 0.95em;">
+          This is an automated alert from your admin dashboard.
+        </div>
+      </div>
+    </div>
+    `;
+    sendEmail(adminEmail, subject, html);
   } catch (error) {
     // If there's an error, cleanup any uploaded files
     if (req.files) {
@@ -194,43 +230,6 @@ exports.getRequestById = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "حدث خطأ أثناء جلب الطلب",
-    });
-  }
-};
-
-// @desc    Delete recovery request and its documents
-// @route   DELETE /api/account-recovery/:id
-// @access  Private (Admin only)
-exports.deleteRequest = async (req, res) => {
-  try {
-    const request = await AccountRecovery.findById(req.params.id);
-
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message: "الطلب غير موجود",
-      });
-    }
-
-    // Delete documents from Cloudinary
-    for (const doc of request.identityDocuments) {
-      if (doc.public_id) {
-        await cloudinary.uploader.destroy(doc.public_id);
-      }
-    }
-
-    // Delete the request from database using findByIdAndDelete
-    await AccountRecovery.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "تم حذف الطلب بنجاح",
-    });
-  } catch (error) {
-    console.error("Error deleting recovery request:", error);
-    res.status(500).json({
-      success: false,
-      message: "حدث خطأ أثناء حذف الطلب",
     });
   }
 };

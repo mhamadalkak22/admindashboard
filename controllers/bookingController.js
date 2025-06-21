@@ -4,6 +4,7 @@ const {
   AVAILABLE_TIMES,
   PLATFORMS,
 } = require("../models/Booking");
+const sendEmail = require("../utils/sendEmail").default;
 
 // @desc    Create new booking
 // @route   POST /api/bookings
@@ -22,15 +23,6 @@ exports.createBooking = async (req, res) => {
       appointmentTime,
       additionalNotes,
     } = req.body;
-
-    // Validate platform
-    if (!PLATFORMS[platform]) {
-      return res.status(400).json({
-        success: false,
-        message: "المنصة غير صحيحة",
-        validPlatforms: PLATFORMS,
-      });
-    }
 
     // Validate service type
     const arabicServiceName = SERVICE_TYPES[serviceType];
@@ -95,15 +87,49 @@ exports.createBooking = async (req, res) => {
       additionalNotes,
     });
 
-
     const savedBooking = await booking.save();
-
 
     res.status(201).json({
       success: true,
       message: "تم تقديم طلبك بنجاح",
       data: savedBooking,
     });
+
+    // Send admin alert email only after successful response
+    const adminEmail = process.env.EMAIL_ADDRESS;
+    const subject = "New Booking Submitted";
+    const html = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; padding: 32px;">
+      <div style="max-width: 480px; margin: auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px #0001; overflow: hidden;">
+        <div style="background: linear-gradient(90deg, #4f8cff, #38c6d9); color: #fff; padding: 24px 32px; text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 8px;">🚨</div>
+          <h2 style="margin: 0; font-size: 1.6em;">Admin Alert</h2>
+        </div>
+        <div style="padding: 24px 32px;">
+          <p style="font-size: 1.1em; margin-bottom: 16px;">
+            <b>New Booking</b> has just been submitted!
+          </p>
+          <table style="width: 100%; font-size: 1em; margin-bottom: 16px;">
+            <tr><td><b>Full Name:</b></td><td>${fullName}</td></tr>
+            <tr><td><b>Email:</b></td><td>${email}</td></tr>
+            <tr><td><b>Phone Number:</b></td><td>${phoneNumber}</td></tr>
+            <tr><td><b>Platform:</b></td><td>${platform}</td></tr>
+            <tr><td><b>Service Type:</b></td><td>${arabicServiceName}</td></tr>
+            <tr><td><b>Appointment Date:</b></td><td>${appointmentDate}</td></tr>
+            <tr><td><b>Appointment Time:</b></td><td>${appointmentTime}</td></tr>
+            <tr><td><b>Additional Notes:</b></td><td>${additionalNotes || '-'}</td></tr>
+          </table>
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="#" style="background: #4f8cff; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: bold;">View in Dashboard</a>
+          </div>
+        </div>
+        <div style="background: #f4f6fb; color: #888; text-align: center; padding: 12px 0; font-size: 0.95em;">
+          This is an automated alert from your admin dashboard.
+        </div>
+      </div>
+    </div>
+    `;
+    sendEmail(adminEmail, subject, html);
   } catch (error) {
     console.error("Booking error:", error);
     res.status(500).json({

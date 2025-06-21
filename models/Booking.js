@@ -67,8 +67,7 @@ const bookingSchema = new mongoose.Schema(
     },
     platform: {
       type: String,
-      required: true,
-      enum: Object.keys(PLATFORMS),
+      trim: true,
     },
     serviceType: {
       type: String,

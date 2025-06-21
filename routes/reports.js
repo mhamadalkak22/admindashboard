@@ -6,7 +6,6 @@ const {
   submitReport,
   getAllReports,
   getReportById,
-  deleteReport,
 } = require("../controllers/reportController");
 
 // Configure multer upload fields
@@ -23,6 +22,5 @@ router.post("/", uploadFields, submitReport);
 // Protected routes (Admin only)
 router.get("/", auth, getAllReports);
 router.get("/:id", auth, getReportById);
-router.delete("/:id", auth, deleteReport);
 
 module.exports = router;

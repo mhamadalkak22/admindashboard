@@ -6,27 +6,24 @@ const { cloudinary } = require("../config/cloudinary");
 // @access  Public
 exports.submitFeedback = async (req, res) => {
   try {
-    const { name, feedback } = req.body;
+    const { name, feedback, media: mediaString } = req.body;
 
-    // Handle uploaded file
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "يجب إرفاق صورة أو فيديو",
-      });
+    let media = null;
+    if (req.file) {
+      // Determine resource type
+      const resourceType = req.file.mimetype.startsWith("video/")
+        ? "video"
+        : "image";
+
+      // Create media object
+      media = {
+        secure_url: req.file.path,
+        public_id: req.file.filename,
+        resource_type: resourceType,
+      };
+    } else if (mediaString) {
+      media = mediaString; // Accept media as a string if provided
     }
-
-    // Determine resource type
-    const resourceType = req.file.mimetype.startsWith("video/")
-      ? "video"
-      : "image";
-
-    // Create media object
-    const media = {
-      secure_url: req.file.path,
-      public_id: req.file.filename,
-      resource_type: resourceType,
-    };
 
     // Create new feedback
     const newFeedback = new Feedback({
@@ -134,7 +131,9 @@ exports.deleteFeedback = async (req, res) => {
 
     // Delete media from Cloudinary
     if (feedback.media && feedback.media.public_id) {
-      await cloudinary.uploader.destroy(feedback.media.public_id);
+      await cloudinary.uploader.destroy(feedback.media.public_id, {
+        resource_type: feedback.media.resource_type,
+      });
     }
 
     // Delete the feedback from database
@@ -149,6 +148,83 @@ exports.deleteFeedback = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "حدث خطأ أثناء حذف الملاحظات",
+    });
+  }
+};
+
+// @desc    Update feedback
+// @route   PUT /api/feedback/:id
+// @access  Private (Admin only)
+exports.updateFeedback = async (req, res) => {
+  try {
+    let feedback = await Feedback.findById(req.params.id);
+
+    if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: "الملاحظات غير موجودة",
+      });
+    }
+
+    const { name, feedback: feedbackText, media: mediaString } = req.body;
+
+    // Update text fields if provided
+    if (name) feedback.name = name;
+    if (feedbackText) feedback.feedback = feedbackText;
+
+    // Check for new media file
+    if (req.file) {
+      // If there's an old media file, delete it from Cloudinary
+      if (feedback.media && feedback.media.public_id) {
+        await cloudinary.uploader.destroy(feedback.media.public_id, {
+          resource_type: feedback.media.resource_type,
+        });
+      }
+
+      // Determine resource type
+      const resourceType = req.file.mimetype.startsWith("video/")
+        ? "video"
+        : "image";
+
+      // Update with new media
+      feedback.media = {
+        secure_url: req.file.path,
+        public_id: req.file.filename,
+        resource_type: resourceType,
+      };
+    } else if (mediaString) {
+      // If a media string is provided, update the media field.
+      // This assumes if a string is passed, it's the new media url.
+      // If there was an old file in cloudinary it should be deleted.
+      if (feedback.media && feedback.media.public_id) {
+        await cloudinary.uploader.destroy(feedback.media.public_id, {
+          resource_type: feedback.media.resource_type,
+        });
+      }
+      feedback.media = mediaString;
+    }
+
+    await feedback.save();
+
+    res.json({
+      success: true,
+      message: "تم تحديث الملاحظات بنجاح",
+      data: feedback,
+    });
+  } catch (error) {
+    // If there's an error and a new file was uploaded, cleanup the new file
+    if (req.file && req.file.filename) {
+      const resourceType = req.file.mimetype.startsWith("video/")
+        ? "video"
+        : "image";
+      await cloudinary.uploader.destroy(req.file.filename, {
+        resource_type: resourceType,
+      });
+    }
+    console.error("Error updating feedback:", error);
+    res.status(500).json({
+      success: false,
+      message: "حدث خطأ أثناء تحديث الملاحظات",
     });
   }
 };

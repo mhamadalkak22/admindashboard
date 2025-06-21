@@ -1,4 +1,9 @@
 const Admin = require("../models/Admin");
+const { Booking } = require("../models/Booking");
+const Feedback = require("../models/Feedback");
+const Report = require("../models/Report");
+const { AccountRecovery } = require("../models/AccountRecovery");
+const Blog = require("../models/Blog");
 
 // @desc    Get admin dashboard data
 // @access  Private
@@ -16,29 +21,29 @@ exports.getDashboardData = async (req, res) => {
   }
 };
 
-// @desc    Update admin profile
-// @access  Private
-exports.updateProfile = async (req, res) => {
+exports.getCounts = async (req, res) => {
   try {
-    const { name, email } = req.body;
-    const adminFields = {};
-    if (name) adminFields.name = name;
-    if (email) adminFields.email = email;
+    const bookingsCount = await Booking.countDocuments();
+    const feedbacksCount = await Feedback.countDocuments();
+    const reportsCount = await Report.countDocuments();
+    const accountRecoveriesCount = await AccountRecovery.countDocuments();
+    const blogsCount = await Blog.countDocuments();
 
-    let admin = await Admin.findById(req.admin.id);
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-
-    admin = await Admin.findByIdAndUpdate(
-      req.admin.id,
-      { $set: adminFields },
-      { new: true }
-    ).select("-password");
-
-    res.json(admin);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
+    res.json({
+      success: true,
+      data: {
+        bookings: bookingsCount,
+        feedbacks: feedbacksCount,
+        reports: reportsCount,
+        accountRecoveries: accountRecoveriesCount,
+        blogs: blogsCount,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching counts:", error);
+    res.status(500).json({
+      success: false,
+      message: "حدث خطأ أثناء جلب الإحصائيات",
+    });
   }
-};
+}; 

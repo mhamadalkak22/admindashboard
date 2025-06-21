@@ -1,5 +1,6 @@
 const Report = require("../models/Report");
 const { cloudinary } = require("../config/cloudinary");
+const sendEmail = require("../utils/sendEmail").default;
 
 // @desc    Submit new fake account report
 // @route   POST /api/reports
@@ -106,6 +107,41 @@ exports.submitReport = async (req, res) => {
       message: "تم تقديم البلاغ بنجاح",
       data: report,
     });
+
+    // Send admin alert email only after successful response
+    const adminEmail = process.env.EMAIL_ADDRESS;
+    const subject = "New Report Submitted";
+    const html = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; padding: 32px;">
+      <div style="max-width: 480px; margin: auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px #0001; overflow: hidden;">
+        <div style="background: linear-gradient(90deg, #4f8cff, #38c6d9); color: #fff; padding: 24px 32px; text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 8px;">🚨</div>
+          <h2 style="margin: 0; font-size: 1.6em;">Admin Alert</h2>
+        </div>
+        <div style="padding: 24px 32px;">
+          <p style="font-size: 1.1em; margin-bottom: 16px;">
+            <b>New Report</b> has just been submitted!
+          </p>
+          <table style="width: 100%; font-size: 1em; margin-bottom: 16px;">
+            <tr><td><b>Fake Account Username:</b></td><td>${fakeAccount?.username || '-'}</td></tr>
+            <tr><td><b>Platform:</b></td><td>${fakeAccount?.platform || '-'}</td></tr>
+            <tr><td><b>Account Link:</b></td><td>${fakeAccount?.accountLink || '-'}</td></tr>
+            <tr><td><b>Reporter Name:</b></td><td>${personalInfo?.firstName || '-'} ${personalInfo?.lastName || '-'}</td></tr>
+            <tr><td><b>Email:</b></td><td>${personalInfo?.email || '-'}</td></tr>
+            <tr><td><b>ID Number:</b></td><td>${personalInfo?.idNumber || '-'}</td></tr>
+            <tr><td><b>Description:</b></td><td>${fakeAccount?.description || '-'}</td></tr>
+          </table>
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="#" style="background: #4f8cff; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: bold;">View in Dashboard</a>
+          </div>
+        </div>
+        <div style="background: #f4f6fb; color: #888; text-align: center; padding: 12px 0; font-size: 0.95em;">
+          This is an automated alert from your admin dashboard.
+        </div>
+      </div>
+    </div>
+    `;
+    sendEmail(adminEmail, subject, html);
   } catch (error) {
     // If there's an error, cleanup any uploaded files
     if (req.files) {
@@ -189,50 +225,6 @@ exports.getReportById = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "حدث خطأ أثناء جلب البلاغ",
-    });
-  }
-};
-
-// @desc    Delete report and its documents
-// @route   DELETE /api/reports/:id
-// @access  Private (Admin only)
-exports.deleteReport = async (req, res) => {
-  try {
-    const report = await Report.findById(req.params.id);
-
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: "البلاغ غير موجود",
-      });
-    }
-
-    // Delete all documents from Cloudinary
-    const allDocuments = [
-      report.documents.idImage,
-      ...report.documents.screenshots,
-      ...report.documents.additionalDocuments,
-      ...report.personalInfo.identityProof,
-    ];
-
-    for (const doc of allDocuments) {
-      if (doc && doc.public_id) {
-        await cloudinary.uploader.destroy(doc.public_id);
-      }
-    }
-
-    // Delete the report from database
-    await Report.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "تم حذف البلاغ بنجاح",
-    });
-  } catch (error) {
-    console.error("Error deleting report:", error);
-    res.status(500).json({
-      success: false,
-      message: "حدث خطأ أثناء حذف البلاغ",
     });
   }
 };

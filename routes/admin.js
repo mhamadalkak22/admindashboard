@@ -3,17 +3,14 @@ const router = express.Router();
 const auth = require("../middleware/auth");
 const {
   getDashboardData,
-  updateProfile,
+  getCounts,
 } = require("../controllers/adminController");
 
 // @route   GET api/admin/dashboard
 // @desc    Get admin dashboard data
 // @access  Private
 router.get("/dashboard", auth, getDashboardData);
+router.get("/counts", auth, getCounts);
 
-// @route   PUT api/admin/profile
-// @desc    Update admin profile
-// @access  Private
-router.put("/profile", auth, updateProfile);
 
 module.exports = router;
